@@ -37,7 +37,7 @@ print(f"Zeros Tensor: \n {zeros_tensor}")
 
 # 1120 PyTorch实践：逐步认识MLP多层感知机
 关键词：
-MLP、隐藏层、激活函数 + 梯度下降 + Adam 优化器
+前向传播、梯度、损失函数、反向传播、学习率、优化器、输入层、隐藏层、线性变换、激活函数、输出层、均匀分布初始化。
 
 [copilot:learn pytorch](https://copilot.microsoft.com/shares/gs2Dy6e3kvTPnzUwkvcjk)
 ## 训练相关概念
