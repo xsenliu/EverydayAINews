@@ -35,18 +35,22 @@ print(f"Zeros Tensor: \n {zeros_tensor}")
 
 </details>
 
-# 1120 
-MLP + 隐藏层 + 激活函数 + 梯度下降 + Adam 优化器
+# 1120 PyTorch实践：逐步认识MLP多层感知机
+关键词：
+MLP、隐藏层、激活函数 + 梯度下降 + Adam 优化器
+
 [copilot:learn pytorch](https://copilot.microsoft.com/shares/gs2Dy6e3kvTPnzUwkvcjk)
-## 基本概念
+## 训练相关概念
 - 前向传播 (Forward pass)：输入》张量运算》输出
 - 损失函数：模型输出和真实标签之间的差异，比如均方误差 (MSE)、交叉熵 (Cross-Entropy)。
-  > 损失函数 𝐿 是参数的函数：
-  > 𝐿=𝑓(𝑊,𝑏,𝑥)
+  > 损失函数 𝐿 是参数的函数：𝐿=𝑓(𝑊,𝑏,𝑥)
+  >
+  > 回归任务 → MSE (均方误差)。  
+  > 分类任务 → CrossEntropyLoss。  
 - 梯度：损失函数对参数的偏导数。即：如果参数𝑊改变一点点，损失𝐿会怎么变化
   > 梯度反方向：往哪个方向调整参数能让损失减小。
   > 梯度大小：调整多少合适。
-- 反向传播 (Backward pass)：损失函数对每个参数求导，计算梯度。
+- 反向传播 (Backward pass)：损失函数对每个参数求导，计算梯度，并更新参数。
 - 梯度下降法 (Gradient Descent)：新参数=旧参数−𝜂⋅梯度
   > 𝜂 是 学习率 (learning rate)，控制每次更新的步长
 代码示例：
@@ -121,6 +125,38 @@ for epoch in range(10):
     b = model.bias.data.item()
     print(f"Epoch {epoch}: loss={loss.item():.4f}, weight={w:.4f}, bias={b:.4f}")
 ```
+## MLP（多层感知机）关键概念
+
+- **输入层 (Input Layer)**  
+  - 接收原始数据，例如二次函数拟合中的标量 \(x\)，或 MNIST 中的 \(28 \times 28\) 像素图像。  
+  - 形状通常是 \([batch\_size, feature\_dim]\)。  
+
+- **隐藏层 (Hidden Layers)**  
+  - 位于输入层和输出层之间。  
+  - 每一层由若干神经元组成，负责提取特征和引入非线性。  
+  - 示例中使用两层隐藏层，每层 16 或 256 个神经元。  
+
+- **线性变换 (Linear Transformation)**  
+  - 每个神经元计算：
+    \[
+    z = W \cdot x + b
+    \]
+  - 权重 \(W\) 和偏置 \(b\) 是需要学习的参数。  
+
+- **激活函数 (Activation Function)**  
+  - 引入非线性，使网络能拟合复杂函数。  
+  - 示例中使用 **ReLU**：  
+    \[
+    \text{ReLU}(x) = \max(0, x)
+    \]  
+  - 输出层根据任务不同选择是否加激活：  
+    - 回归任务 → 不加激活  
+    - 分类任务 → CrossEntropyLoss 内部包含 Softmax  
+
+- **输出层 (Output Layer)**  
+  - 给出最终预测结果。  
+  - 二次函数拟合 → 输出一个标量 \(\hat{y}\)。  
+  - MNIST 分类 → 输出 10 维向量，对应数字 0–9。  
 ## 多层神经网络 (MLP) 拟合二次函数
 ```py
 import torch
@@ -163,7 +199,6 @@ for epoch in range(200):
     if epoch % 20 == 0:                           # 每20轮打印一次
         print(f"Epoch {epoch:03d}: loss={loss.item():.4f}")
 ```
-#### 总结
 1. **`nn.Linear` 的矩阵和偏置大小**  
    - 权重矩阵形状：\((out\_features, in\_features)\)  
    - 偏置向量形状：\((out\_features)\)，在批维度上广播成 \([batch\_size, out\_features]\)。  
@@ -187,4 +222,67 @@ for epoch in range(200):
 
 5. **矩阵维度的完整追踪**  
    - 输入 \([200,1]\) → 第一层 \([200,16]\) → 第二层 \([200,16]\) → 输出层 \([200,1]\)。  
-   - 偏置在广播时从 \([16]\) 扩展成 \([200,16]\)。  
+   - 偏置在广播时从 \([16]\) 扩展成 \([200,16]\)。
+  
+## 扩展：MLP 识别 MNIST 手写数字
+```py
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+
+# 1. 加载 MNIST 数据集
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+train_dataset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+test_dataset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=False)
+
+# 2. 定义 MLP 模型
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+        self.fc1 = nn.Linear(28*28, 256)   # 输入层 -> 隐藏层1
+        self.fc2 = nn.Linear(256, 128)     # 隐藏层1 -> 隐藏层2
+        self.fc3 = nn.Linear(128, 10)      # 隐藏层2 -> 输出层 (10类)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = x.view(-1, 28*28)              # 展平图像 [batch, 784]
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        x = self.fc3(x)                    # 输出层不加激活，交给 CrossEntropyLoss
+        return x
+
+model = MLP()
+
+# 3. 损失函数和优化器
+criterion = nn.CrossEntropyLoss()          # 分类任务常用损失函数
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# 4. 训练模型
+for epoch in range(5):                     # 训练5个epoch
+    for images, labels in train_loader:
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    print(f"Epoch [{epoch+1}/5], Loss: {loss.item():.4f}")
+
+# 5. 测试模型
+correct = 0
+total = 0
+with torch.no_grad():
+    for images, labels in test_loader:
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+print(f"Test Accuracy: {100 * correct / total:.2f}%")
+```
