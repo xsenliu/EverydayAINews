@@ -32,3 +32,5 @@ print(f"Random Tensor: \n {rand_tensor} ")
 print(f"Ones Tensor: \n {ones_tensor} ")
 print(f"Zeros Tensor: \n {zeros_tensor}")
 ```
+
+https://copilot.microsoft.com/shares/2hYuMZQzjDJgTwAToYtdM
